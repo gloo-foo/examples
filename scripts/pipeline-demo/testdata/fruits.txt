@@ -1,0 +1,8 @@
+banana 5
+apple 3
+cherry 8
+banana 2
+apple 7
+cherry 1
+date 4
+apple 6
