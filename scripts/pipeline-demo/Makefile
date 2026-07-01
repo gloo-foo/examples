@@ -1,14 +1,22 @@
 # Self-documenting quality gate for an illustrative gloo demo module. Run `make`
 # (or `make help`).
 #
-# Every tool is declared in the go.mod `tool` stanza and invoked via `go tool`,
-# so there are no global installs and versions are pinned in go.mod/go.sum. These
+# Tools are resolved from ${GOBIN} only -- the pinned set installed by
+# nicerobot/tools.build (go-tooling/tools.txt), the same mechanism the shared
+# library Makefile uses. There is no per-module tool stanza or vendoring. These
 # modules are documentation/demos: the `check` target proves they stay clean,
 # compile, and (for example tests) pass — it does not enforce coverage or build
 # release artifacts. No change is complete until `check` exits zero.
 .DEFAULT_GOAL := check
 
-GO ?= go
+GO    ?= go
+GOBIN := $(strip $(shell $(GO) env GOBIN))
+gobin-or-die = $(or $(GOBIN),$(error GOBIN is not set -- install the pinned tool set via nicerobot/tools.build (go-tooling/install-tools.sh); the gate resolves tools from ${GOBIN} only, no PATH/GOPATH fallback))
+GOFUMPT       = $(gobin-or-die)/gofumpt
+GOLANGCI_LINT = $(gobin-or-die)/golangci-lint
+STATICCHECK   = $(gobin-or-die)/staticcheck
+GOCOGNIT      = $(gobin-or-die)/gocognit
+GOVULNCHECK   = $(gobin-or-die)/govulncheck
 # Production (non-test) Go files — the cognitive-complexity gate runs over these.
 SRC := $(shell find . -name '*.go' -not -name '*_test.go' -not -path './vendor/*')
 
@@ -24,11 +32,11 @@ check: fmt-check vet lint staticcheck cognit vuln build test ## Full gate: forma
 
 .PHONY: fmt
 fmt: ## Rewrite all files with the strict formatter (gofumpt)
-	$(GO) tool gofumpt -w .
+	$(GOFUMPT) -w .
 
 .PHONY: fmt-check
 fmt-check: ## Fail if any file is not gofumpt-clean
-	@out="$$($(GO) tool gofumpt -l .)"; \
+	@out="$$($(GOFUMPT) -l .)"; \
 	if [ -n "$$out" ]; then echo "gofumpt would reformat:"; echo "$$out"; exit 1; fi
 
 .PHONY: vet
@@ -37,21 +45,21 @@ vet: ## Run go vet
 
 .PHONY: lint
 lint: ## Run golangci-lint aggregate analysis
-	$(GO) tool golangci-lint run
+	$(GOLANGCI_LINT) run
 
 .PHONY: staticcheck
 staticcheck: ## Run staticcheck (zero findings)
-	$(GO) tool staticcheck ./...
+	$(STATICCHECK) ./...
 
 .PHONY: cognit
 cognit: ## Assert cognitive complexity <= 7 for every production function
 	@if [ -z "$(SRC)" ]; then exit 0; fi; \
-	out="$$($(GO) tool gocognit -over 7 $(SRC))"; \
+	out="$$($(GOCOGNIT) -over 7 $(SRC))"; \
 	if [ -n "$$out" ]; then echo "cognitive complexity > 7:"; echo "$$out"; exit 1; fi
 
 .PHONY: vuln
 vuln: ## Scan for known vulnerabilities
-	$(GO) tool govulncheck ./...
+	$(GOVULNCHECK) ./...
 
 .PHONY: build
 build: ## Compile every package
