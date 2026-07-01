@@ -31,7 +31,7 @@ func main() {
 		dir = os.Args[1]
 	}
 	if err := analyze(afero.NewOsFs(), os.Stdout, os.Stderr, dir); err != nil {
-		fmt.Fprintf(os.Stderr, "file-stats: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "file-stats: %v\n", err)
 		os.Exit(1)
 	}
 }
