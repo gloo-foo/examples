@@ -14,6 +14,6 @@ for file in "${dir}"/*.log; do
   echo "Processing ${file}" >&2 # gloo: fmt.Fprintf(status, "Processing %s\n", path)
 
   # gloo: grep.Grep("error|warning", GrepExtended, GrepIgnoreCase) | While(timestampLevel)
-  grep -iE 'error|warning' "${file}" \
-    | awk '{ print $1 "," $2 }'
+  grep -iE 'error|warning' "${file}" |
+    awk '{ print $1 "," $2 }'
 done
